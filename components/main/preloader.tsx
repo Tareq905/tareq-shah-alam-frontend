@@ -15,20 +15,49 @@ const STATUS_MESSAGES = [
 
 export const Preloader = () => {
   const [mounted, setMounted] = useState(false);
-  const [stage, setStage] = useState<"loading" | "welcome" | "complete">("loading");
+  const [stage, setStage] = useState<"loading" | "welcome" | "shutting_down" | "complete">("loading");
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("INITIALIZING NEURAL CORE...");
 
-  // Handler to transition from welcome screen into main portfolio
+  const [isWelcomeReady, setIsWelcomeReady] = useState(false);
+
+  // Handler to transition from welcome screen into main portfolio with TV-Off & Focus Reveal
   const enterPortfolio = useCallback(() => {
-    setStage("complete");
+    if (stage === "shutting_down" || stage === "complete") return;
+
+    // Pin viewport to top
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    }
+
+    // Keep scroll strictly locked
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    // Trigger TV-Off Shutoff State
+    setStage("shutting_down");
+
+    // Dispatch Chromar focus-reveal event for the main portfolio
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("portfolio_focus_reveal"));
+    }
+
     try {
       sessionStorage.setItem("portfolio_intro_seen", "true");
     } catch {
       // Ignore in restricted environments
     }
-    document.body.style.overflow = "unset";
-  }, []);
+
+    // Complete transition after TV-Off + Chromar effect finishes (~1050ms)
+    setTimeout(() => {
+      setStage("complete");
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+      }
+      document.body.style.overflow = "unset";
+      document.documentElement.style.overflow = "unset";
+    }, 1050);
+  }, [stage]);
 
   useEffect(() => {
     setMounted(true);
@@ -47,6 +76,7 @@ export const Preloader = () => {
       if (hasSeenIntro && !isReload) {
         setStage("complete");
         document.body.style.overflow = "unset";
+        document.documentElement.style.overflow = "unset";
         return;
       }
     } catch {
@@ -55,6 +85,7 @@ export const Preloader = () => {
 
     // Lock scroll during intro loading and welcome screen
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
 
     let current = 0;
     const interval = setInterval(() => {
@@ -73,23 +104,29 @@ export const Preloader = () => {
         clearInterval(interval);
         setTimeout(() => {
           setStage("welcome");
+          // Allow scrolling only after welcome elements have smoothly settled
+          setTimeout(() => {
+            setIsWelcomeReady(true);
+          }, 500);
         }, 400); // Transition to Welcome Splash screen
       }
-    }, 45); // Slower, deliberate cadence (~2.6 seconds)
+    }, 45); // Deliberate cadence (~2.6 seconds)
 
     return () => {
       clearInterval(interval);
       document.body.style.overflow = "unset";
+      document.documentElement.style.overflow = "unset";
     };
   }, []);
 
   // When on the Welcome screen, advance EXCLUSIVELY when user scrolls with mouse wheel (or mobile touch swipe)
   useEffect(() => {
-    if (stage !== "welcome") return;
+    if (stage !== "welcome" || !isWelcomeReady) return;
 
     let touchStartY = 0;
 
     const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
       // Trigger strictly on mouse wheel scroll
       if (Math.abs(e.deltaY) > 2 || Math.abs(e.deltaX) > 2) {
         enterPortfolio();
@@ -104,20 +141,21 @@ export const Preloader = () => {
       const currentY = e.touches[0].clientY;
       // If user swipes to scroll on touch device
       if (Math.abs(touchStartY - currentY) > 15) {
+        e.preventDefault();
         enterPortfolio();
       }
     };
 
-    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
 
     return () => {
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
     };
-  }, [stage, enterPortfolio]);
+  }, [stage, isWelcomeReady, enterPortfolio]);
 
   if (!mounted || stage === "complete") {
     return null;
@@ -129,15 +167,16 @@ export const Preloader = () => {
         key="intro-overlay"
         suppressHydrationWarning
         initial={{ opacity: 1 }}
-        exit={{
-          opacity: 0,
-          scale: 1.04,
-          filter: "blur(16px)",
-          transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] },
-        }}
-        className="fixed inset-0 z-[9999] bg-[#030014] flex flex-col items-center justify-between py-10 px-6 select-none overflow-hidden"
+        className={`fixed inset-0 z-[9999] bg-[#030014] flex flex-col items-center justify-between py-10 px-6 select-none overflow-hidden origin-center ${
+          stage === "shutting_down" ? "portal-tear-active pointer-events-none" : ""
+        }`}
       >
-          {/* Cosmic Portfolio Ambient Glowing Orbs */}
+        {/* Pulsing Torn Hole Shockwave Quantum Ring */}
+        {stage === "shutting_down" && (
+          <div className="torn-shockwave" />
+        )}
+
+        {/* Cosmic Portfolio Ambient Glowing Orbs */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] sm:w-[650px] h-[450px] sm:h-[650px] bg-purple-600/20 rounded-full blur-[160px] pointer-events-none animate-pulse" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[420px] h-[300px] sm:h-[420px] bg-cyan-500/15 rounded-full blur-[120px] pointer-events-none" />
 
@@ -176,107 +215,87 @@ export const Preloader = () => {
                 />
               </div>
 
-              {/* Typography "TAREQ" */}
-              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-cyan-200 to-white font-serif drop-shadow-[0_2px_20px_rgba(112,66,248,0.7)]">
-                TAREQ
-              </h2>
-              <span className="text-[10px] font-mono tracking-[0.3em] text-cyan-400 uppercase mt-1 mb-6">
-                Machine Learning & Data Science
-              </span>
-
-              {/* Big Stylish Percentage Counter */}
-              <div className="flex items-baseline justify-center mb-5">
-                <span className="text-6xl sm:text-8xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-100 to-purple-200 font-mono tracking-tighter drop-shadow-[0_0_35px_rgba(112,66,248,0.45)]">
-                  {progress}
-                </span>
-                <span className="text-2xl sm:text-3xl font-bold text-cyan-400 font-mono ml-1.5 opacity-90 drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]">
-                  %
-                </span>
+              {/* Large Futuristic Percentage Display */}
+              <div className="relative font-mono font-extrabold text-7xl sm:text-8xl md:text-9xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-300 to-indigo-400 drop-shadow-[0_0_35px_rgba(112,66,248,0.5)]">
+                {progress}
+                <span className="text-4xl sm:text-5xl md:text-6xl text-cyan-400 ml-1 font-light opacity-90">%</span>
               </div>
 
-              {/* Glowing Purple & Cyan Progress Bar */}
-              <div className="w-full max-w-[280px] sm:max-w-[340px] h-[3.5px] bg-[#090226] border border-purple-500/30 rounded-full overflow-hidden relative shadow-inner mb-3">
+              {/* Glowing Progress Bar */}
+              <div className="w-full max-w-xs h-1.5 bg-[#120638] rounded-full overflow-hidden mt-6 border border-purple-500/30 p-[1px] shadow-[0_0_15px_rgba(112,66,248,0.4)]">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-purple-600 via-indigo-500 to-cyan-400 rounded-full shadow-[0_0_16px_#06b6d4]"
+                  className="h-full bg-gradient-to-r from-purple-600 via-cyan-400 to-cyan-300 rounded-full shadow-[0_0_12px_#06b6d4]"
                   style={{ width: `${progress}%` }}
                   transition={{ ease: "easeOut" }}
                 />
               </div>
 
-              {/* Status Message */}
-              <p className="text-[11px] sm:text-xs font-mono text-cyan-300/90 tracking-wider h-5 flex items-center justify-center">
-                {statusText}
-              </p>
+              {/* Dynamic Status Text */}
+              <div className="mt-4 flex items-center gap-2 text-xs sm:text-sm font-mono text-cyan-300/90 tracking-wider">
+                <span className="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span>{statusText}</span>
+              </div>
             </motion.div>
           )}
 
-          {/* ================= STAGE 2: WELCOME SPLASH SCREEN (mubx.dev style) ================= */}
-          {stage === "welcome" && (
+          {/* ================= STAGE 2: WELCOME SPLASH SCREEN ================= */}
+          {(stage === "welcome" || stage === "shutting_down") && (
             <motion.div
               key="stage-welcome"
-              initial={{ opacity: 0, y: 25, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -25, scale: 1.05, filter: "blur(12px)" }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col items-center justify-center text-center my-auto z-10 w-full max-w-4xl px-4"
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="flex flex-col items-center justify-center text-center my-auto z-10 max-w-2xl px-4"
             >
-              {/* Top Logo Badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="relative w-11 h-11 sm:w-13 sm:h-13 mb-5 sm:mb-6 drop-shadow-[0_0_20px_rgba(6,182,212,0.7)]"
-              >
+              {/* Profile Avatar Glow Pill */}
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl p-[2px] bg-gradient-to-tr from-purple-500 via-cyan-400 to-indigo-500 mb-6 shadow-[0_0_35px_rgba(112,66,248,0.6)] group overflow-hidden">
                 <Image
-                  src="/skills/tareq-logo-clean.png"
-                  alt="Tareq Logo"
-                  fill
-                  className="object-contain"
+                  src="/md-tareq-shah-alam.jpg"
+                  alt="Md Tareq Shah Alam"
+                  width={80}
+                  height={80}
+                  className="w-full h-full object-cover rounded-2xl"
                   priority
                 />
-              </motion.div>
+              </div>
 
-              {/* Sub-heading "Hi, my name is" */}
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
+              {/* Greeting Text */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="text-gray-400 font-mono text-[11px] sm:text-xs tracking-[0.25em] uppercase mb-3"
+                transition={{ delay: 0.15, duration: 0.5 }}
+                className="text-gray-300 font-light text-base sm:text-xl md:text-2xl tracking-wide mb-2"
               >
                 Hi, my name is
-              </motion.p>
+              </motion.div>
 
-              {/* Main Headline: "Md Tareq Shah Alam." in Standard Balanced Size */}
+              {/* Bold Name with Standard Balanced Size */}
               <motion.h1
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.35 }}
-                className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 sm:mb-5 leading-tight flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3.5"
+                transition={{ delay: 0.25, duration: 0.5 }}
+                className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-purple-200 to-indigo-300 drop-shadow-[0_0_30px_rgba(112,66,248,0.5)]"
               >
-                <span className="text-white drop-shadow-[0_2px_15px_rgba(255,255,255,0.3)]">
-                  Md Tareq
-                </span>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-cyan-300 drop-shadow-[0_0_30px_rgba(6,182,212,0.75)]">
-                  Shah Alam.
-                </span>
+                Md Tareq Shah Alam.
               </motion.h1>
 
-              {/* "Welcome to my Portfolio" */}
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
+              {/* Sub-headline */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="text-gray-300 font-mono text-[11px] sm:text-xs tracking-[0.22em] uppercase text-center"
+                transition={{ delay: 0.35, duration: 0.5 }}
+                className="mt-3 text-sm sm:text-lg md:text-xl text-cyan-400/90 font-mono"
               >
                 Welcome to my Portfolio
-              </motion.p>
+              </motion.div>
 
-              {/* Subtle Scroll prompt with pulsing vertical beam */}
+              {/* Prompt with Animated Downward Scroll Pulse */}
               <motion.div
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.7 }}
-                className="mt-10 sm:mt-12 flex flex-col items-center gap-2.5 select-none pointer-events-none"
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ delay: 0.6, duration: 2, repeat: Infinity }}
+                className="mt-12 flex flex-col items-center gap-2"
               >
                 {/* Glowing vertical indicator line */}
                 <div className="w-[2px] h-7 bg-gradient-to-b from-cyan-400 to-purple-600 rounded-full animate-pulse shadow-[0_0_12px_#06b6d4]" />

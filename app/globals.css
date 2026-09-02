@@ -81,3 +81,72 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* ================= SEAMLESS TORN HOLE / QUANTUM PORTAL REVEAL ================= */
+@keyframes preloader-portal-tear {
+  0% {
+    -webkit-mask-image: radial-gradient(circle 0px at 50% 50%, transparent 0%, transparent 0%, black 0%);
+    mask-image: radial-gradient(circle 0px at 50% 50%, transparent 0%, transparent 0%, black 0%);
+    opacity: 1;
+    filter: brightness(1);
+  }
+  25% {
+    -webkit-mask-image: radial-gradient(circle 180px at 50% 50%, transparent 70%, rgba(0,0,0,0.4) 85%, black 100%);
+    mask-image: radial-gradient(circle 180px at 50% 50%, transparent 70%, rgba(0,0,0,0.4) 85%, black 100%);
+    opacity: 0.98;
+    filter: brightness(1.5);
+  }
+  65% {
+    -webkit-mask-image: radial-gradient(circle 750px at 50% 50%, transparent 80%, rgba(0,0,0,0.3) 92%, black 100%);
+    mask-image: radial-gradient(circle 750px at 50% 50%, transparent 80%, rgba(0,0,0,0.3) 92%, black 100%);
+    opacity: 0.9;
+    filter: brightness(1.2);
+  }
+  100% {
+    -webkit-mask-image: radial-gradient(circle 1600px at 50% 50%, transparent 100%, black 100%);
+    mask-image: radial-gradient(circle 1600px at 50% 50%, transparent 100%, black 100%);
+    opacity: 0;
+    filter: brightness(1);
+  }
+}
+
+/* Pulsing Cosmic Torn Shockwave Rim */
+@keyframes torn-shockwave-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.05);
+    opacity: 1;
+    box-shadow: 0 0 40px #06b6d4, 0 0 80px #a855f7, inset 0 0 50px #ffffff;
+    border-color: rgba(255, 255, 255, 1);
+  }
+  40% {
+    opacity: 0.9;
+    box-shadow: 0 0 70px #06b6d4, 0 0 130px #a855f7, inset 0 0 70px #06b6d4;
+    border-color: rgba(6, 182, 212, 0.9);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(3.8);
+    opacity: 0;
+    box-shadow: 0 0 140px rgba(6, 182, 212, 0), 0 0 220px rgba(168, 85, 247, 0);
+    border-color: rgba(168, 85, 247, 0);
+  }
+}
+
+.portal-tear-active {
+  animation: preloader-portal-tear 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: mask-image, -webkit-mask-image, opacity, filter;
+}
+
+.torn-shockwave {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  border-radius: 46% 54% 62% 38% / 44% 42% 58% 56%;
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  pointer-events: none;
+  z-index: 99999;
+  animation: torn-shockwave-pulse 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+
