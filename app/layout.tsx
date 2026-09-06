@@ -8,6 +8,7 @@ import { Preloader } from "@/components/main/preloader";
 import { StarsCanvas } from "@/components/main/star-background";
 import { CustomCursor } from "@/components/sub/custom-cursor";
 import { WaterTouchRipple } from "@/components/sub/water-touch-ripple";
+import { BackgroundMusic } from "@/components/sub/background-music";
 import { PortfolioProvider } from "@/context/portfolio-context";
 import { siteConfig } from "@/config";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
         )}
       >
         <PortfolioProvider>
+          <BackgroundMusic />
           <CustomCursor />
           <WaterTouchRipple />
           <Preloader />

@@ -53,6 +53,7 @@ export const Preloader = () => {
       setStage("complete");
       if (typeof window !== "undefined") {
         window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+        window.dispatchEvent(new CustomEvent("portfolio_main_ready"));
       }
       document.body.style.overflow = "unset";
       document.documentElement.style.overflow = "unset";
@@ -75,6 +76,9 @@ export const Preloader = () => {
       // If user has already seen it and it is not a page reload, skip immediately
       if (hasSeenIntro && !isReload) {
         setStage("complete");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("portfolio_main_ready"));
+        }
         document.body.style.overflow = "unset";
         document.documentElement.style.overflow = "unset";
         return;

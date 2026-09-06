@@ -52,6 +52,9 @@ export interface SiteSetting {
   kaggle_url: string;
   twitter_url: string;
   resume_url: string;
+  is_bgm_enabled?: boolean;
+  bgm_file?: string | null;
+  bgm_title?: string;
 }
 
 export interface Education {
@@ -134,6 +137,9 @@ export const DEFAULT_SITE_SETTING: SiteSetting = {
   kaggle_url: "https://www.kaggle.com",
   twitter_url: "https://twitter.com",
   resume_url: "",
+  is_bgm_enabled: true,
+  bgm_file: null,
+  bgm_title: "Arabic Ambient BGM",
 };
 
 export const FALLBACK_PRODUCTION_API_URL = "https://tareq052.pythonanywhere.com";
