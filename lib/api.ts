@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_API_URL || "https://tareq052.pythonanywhere.com";
 
 /**
  * Resolves project and media image URLs safely across development & production.
