@@ -17,7 +17,7 @@ export const ProjectDescriptionMagnifier: React.FC<ProjectDescriptionMagnifierPr
   const [mousePos, setMousePos] = useState({ normX: 0, normY: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Mouse move handler for 3D optical lens tilt and shifting reflection
+  // Mouse move handler for 3D optical lens tilt and dynamic specular glare
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -82,18 +82,18 @@ export const ProjectDescriptionMagnifier: React.FC<ProjectDescriptionMagnifierPr
         </div>
       </div>
 
-      {/* ================= OPTICAL MAGNIFYING GLASS LENS OVERLAY ================= */}
+      {/* ================= OPTICAL MAGNIFYING GLASS LENS (FULL TEXT, ZERO SCROLL) ================= */}
       <AnimatePresence>
         {isMagnified && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.88, y: 0 }}
-            animate={{ opacity: 1, scale: 1.04, y: -8 }}
-            exit={{ opacity: 0, scale: 0.88, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9, y: 4 }}
+            animate={{ opacity: 1, scale: 1.03, y: -6 }}
+            exit={{ opacity: 0, scale: 0.9, y: 4 }}
             transition={{ type: "spring", stiffness: 420, damping: 26 }}
             style={{
-              transform: `perspective(700px) rotateX(${-mousePos.normY * 10}deg) rotateY(${mousePos.normX * 10}deg)`,
+              transform: `perspective(700px) rotateX(${-mousePos.normY * 8}deg) rotateY(${mousePos.normX * 8}deg)`,
             }}
-            className="absolute -inset-x-3 -inset-y-3 z-50 rounded-2xl bg-[#090226]/98 border-2 border-cyan-400 shadow-[0_0_35px_rgba(6,182,212,0.45),0_15px_30px_rgba(0,0,0,0.85)] backdrop-blur-2xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden cursor-auto"
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-[calc(100%+24px)] z-50 rounded-2xl bg-[#080221]/98 border-2 border-cyan-400 shadow-[0_0_45px_rgba(6,182,212,0.5),0_20px_45px_rgba(0,0,0,0.9)] backdrop-blur-2xl p-4 sm:p-5 flex flex-col justify-between overflow-visible cursor-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* --- Convex Glass Lens Glare / Reflection --- */}
@@ -101,38 +101,41 @@ export const ProjectDescriptionMagnifier: React.FC<ProjectDescriptionMagnifierPr
               className="absolute inset-0 rounded-2xl pointer-events-none transition-transform duration-100 ease-out"
               style={{
                 background:
-                  "linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 35%, transparent 60%)",
+                  "linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 40%, transparent 65%)",
                 transform: `translate(${mousePos.normX * 25}px, ${mousePos.normY * 25}px)`,
               }}
             />
 
             {/* Subtle chromatic aberration edge glow */}
-            <div className="absolute inset-0 rounded-2xl pointer-events-none shadow-[inset_0_0_20px_rgba(6,182,212,0.3)]" />
+            <div className="absolute inset-0 rounded-2xl pointer-events-none shadow-[inset_0_0_22px_rgba(6,182,212,0.35)]" />
 
             {/* --- Top Magnifier HUD Header --- */}
             <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-cyan-500/30 text-[10px] sm:text-xs font-mono shrink-0">
               <div className="flex items-center gap-1.5 text-cyan-300 font-semibold">
-                <MagnifyingGlassIcon className="w-4 h-4 text-cyan-400 animate-spin" style={{ animationDuration: "12s" }} />
+                <MagnifyingGlassIcon
+                  className="w-4 h-4 text-cyan-400 animate-spin"
+                  style={{ animationDuration: "12s" }}
+                />
                 <span>MAGNIFIER LENS</span>
                 <span className="px-1.5 py-0.2 rounded bg-cyan-500/20 border border-cyan-400/40 text-[9px]">
-                  1.4X ZOOM
+                  1.4X OPTICAL ZOOM
                 </span>
               </div>
               <div className="flex items-center gap-1 text-[10px] text-purple-300/80">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-ping" />
-                <span className="hidden sm:inline">AUTO-FOCUS</span>
+                <span className="hidden sm:inline">FULL TEXT</span>
               </div>
             </div>
 
-            {/* --- Full Magnified Text (Uncut, Zoomed In, High Contrast) --- */}
-            <div className="overflow-y-auto max-h-[220px] sm:max-h-[280px] pr-1 scrollbar-thin scrollbar-thumb-cyan-500/40 scrollbar-track-transparent select-text">
-              <p className="text-white text-[14px] sm:text-[15.5px] leading-relaxed whitespace-pre-line font-medium tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+            {/* --- Full Magnified Text (Uncut, Zoomed In, Zero Scrolling Required) --- */}
+            <div className="select-text">
+              <p className="text-white text-[14px] sm:text-[15px] leading-relaxed whitespace-pre-line font-medium tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
                 {description}
               </p>
             </div>
 
             {/* --- Bottom Status & Physical Magnifying Handle Accent --- */}
-            <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-purple-500/20 text-[10px] font-mono shrink-0">
+            <div className="flex items-center justify-between pt-2.5 mt-3 border-t border-purple-500/20 text-[10px] font-mono shrink-0">
               <span className="text-gray-400/90 italic">
                 Move mouse away to auto-close
               </span>

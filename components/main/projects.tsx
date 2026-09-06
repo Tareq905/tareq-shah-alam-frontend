@@ -134,11 +134,11 @@ export const Projects = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: idx * 0.1 }}
                     whileHover={{ y: -8 }}
-                    className="group rounded-3xl overflow-hidden bg-[#090226]/85 border border-[#7042f8]/40 hover:border-cyan-400 backdrop-blur-xl shadow-xl shadow-[#1f074d]/50 hover:shadow-cyan-500/20 transition-all duration-300 flex flex-col justify-between"
+                    className="group relative rounded-3xl bg-[#090226]/85 border border-[#7042f8]/40 hover:border-cyan-400 backdrop-blur-xl shadow-xl shadow-[#1f074d]/50 hover:shadow-cyan-500/20 transition-all duration-300 flex flex-col justify-between hover:z-30"
                   >
                     <div>
                       {/* Image Thumbnail */}
-                      <div className="relative w-full h-52 overflow-hidden bg-black/40">
+                      <div className="relative w-full h-52 overflow-hidden rounded-t-3xl bg-black/40">
                         <Image
                           src={getValidImageUrl(project.image || (project as any).image_file || (project as any).image_url)}
                           alt={project.title}
