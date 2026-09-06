@@ -6,6 +6,8 @@ import { Footer } from "@/components/main/footer";
 import { Navbar } from "@/components/main/navbar";
 import { Preloader } from "@/components/main/preloader";
 import { StarsCanvas } from "@/components/main/star-background";
+import { CustomCursor } from "@/components/sub/custom-cursor";
+import { WaterTouchRipple } from "@/components/sub/water-touch-ripple";
 import { PortfolioProvider } from "@/context/portfolio-context";
 import { siteConfig } from "@/config";
 import { cn } from "@/lib/utils";
@@ -31,6 +33,8 @@ export default function RootLayout({ children }: PropsWithChildren) {
         )}
       >
         <PortfolioProvider>
+          <CustomCursor />
+          <WaterTouchRipple />
           <Preloader />
           <StarsCanvas />
           <Navbar />

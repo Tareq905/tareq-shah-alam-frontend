@@ -1,5 +1,43 @@
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://tareq052.pythonanywhere.com";
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
+/**
+ * Resolves project and media image URLs safely across development & production.
+ * Handles /media/ uploads from Django backend as well as absolute URLs.
+ */
+export function getValidImageUrl(url?: string | null): string {
+  if (!url || typeof url !== "string") {
+    return "/projects/project1.png";
+  }
+  const cleanUrl = url.trim();
+  if (!cleanUrl) {
+    return "/projects/project1.png";
+  }
+
+  // Already a full external or data URL
+  if (
+    cleanUrl.startsWith("http://") ||
+    cleanUrl.startsWith("https://") ||
+    cleanUrl.startsWith("data:")
+  ) {
+    return cleanUrl;
+  }
+
+  // If it's a Django media upload path (/media/projects/...)
+  if (cleanUrl.startsWith("/media/")) {
+    const base = API_BASE_URL.replace(/\/+$/, "");
+    return `${base}${cleanUrl}`;
+  }
+
+  // If it's an uploaded file path without leading slash (e.g. projects/...)
+  if (cleanUrl.startsWith("projects/") && !cleanUrl.startsWith("/projects/")) {
+    const base = API_BASE_URL.replace(/\/+$/, "");
+    return `${base}/media/${cleanUrl}`;
+  }
+
+  // Standard Next.js public static asset (e.g. /projects/project1.png)
+  return cleanUrl;
+}
 
 export interface SiteSetting {
   full_name: string;
@@ -50,6 +88,8 @@ export interface Project {
   description: string;
   category: string;
   image: string;
+  image_file?: string | null;
+  image_url?: string;
   live_url: string;
   github_url: string;
   tech_stack: string;

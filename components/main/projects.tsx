@@ -8,6 +8,7 @@ import { SparklesIcon, BookOpenIcon, RocketLaunchIcon, ArrowTopRightOnSquareIcon
 
 import { PROJECTS as FALLBACK_PROJECTS, RESEARCH_PAPERS as FALLBACK_PAPERS } from "@/constants";
 import { usePortfolio } from "@/context/portfolio-context";
+import { getValidImageUrl } from "@/lib/api";
 
 export const Projects = () => {
   const [activeTab, setActiveTab] = useState<"projects" | "research">("projects");
@@ -129,9 +130,10 @@ export const Projects = () => {
                       {/* Image Thumbnail */}
                       <div className="relative w-full h-52 overflow-hidden bg-black/40">
                         <Image
-                          src={project.image || "/projects/project1.png"}
+                          src={getValidImageUrl(project.image || (project as any).image_file || (project as any).image_url)}
                           alt={project.title}
                           fill
+                          unoptimized
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         />

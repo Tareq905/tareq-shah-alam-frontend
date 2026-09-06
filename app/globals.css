@@ -82,6 +82,18 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Custom Gaming & Animated Cyber Cursor: Hide default cursor only when custom cursor is confirmed active */
+body.custom-cursor-active,
+body.custom-cursor-active a,
+body.custom-cursor-active button,
+body.custom-cursor-active input,
+body.custom-cursor-active textarea,
+body.custom-cursor-active select,
+body.custom-cursor-active [role="button"],
+body.custom-cursor-active .cursor-pointer {
+  cursor: none !important;
+}
+
 /* ================= SEAMLESS TORN HOLE / QUANTUM PORTAL REVEAL ================= */
 @keyframes preloader-portal-tear {
   0% {
