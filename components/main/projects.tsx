@@ -4,7 +4,14 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { SparklesIcon, BookOpenIcon, RocketLaunchIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import {
+  SparklesIcon,
+  BookOpenIcon,
+  RocketLaunchIcon,
+  ArrowTopRightOnSquareIcon,
+  MagnifyingGlassPlusIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 
 import { PROJECTS as FALLBACK_PROJECTS, RESEARCH_PAPERS as FALLBACK_PAPERS } from "@/constants";
 import { usePortfolio } from "@/context/portfolio-context";
@@ -12,7 +19,29 @@ import { getValidImageUrl } from "@/lib/api";
 
 export const Projects = () => {
   const [activeTab, setActiveTab] = useState<"projects" | "research">("projects");
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const { projects: projectsList, research: researchList } = usePortfolio();
+
+  // Handle ESC key and prevent body scroll when modal is open
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedProject(null);
+      }
+    };
+
+    if (selectedProject) {
+      window.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [selectedProject]);
 
   // Use API list or fallback
   const displayProjects = projectsList.length > 0
@@ -155,9 +184,29 @@ export const Projects = () => {
                           {project.title}
                         </h3>
 
-                        <p className="text-gray-400 text-sm mt-3 leading-relaxed line-clamp-3">
-                          {project.description}
-                        </p>
+                        {/* Interactive Magnifier Description Box (Desktop Hover & Mobile Touch) */}
+                        <div
+                          onClick={() => setSelectedProject(project)}
+                          className="group/desc relative mt-3 p-3 -mx-2.5 rounded-2xl cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-[#150738] hover:to-[#090226] border border-transparent hover:border-cyan-500/40 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] active:scale-[0.98]"
+                          role="button"
+                          tabIndex={0}
+                          title="Click / Tap to magnify full description 🔍"
+                        >
+                          <p className="text-gray-400 text-sm leading-relaxed line-clamp-3 group-hover/desc:text-gray-200 group-hover/desc:scale-[1.01] origin-top-left transition-all duration-200">
+                            {project.description}
+                          </p>
+
+                          {/* Magnifying Glass Indicator Banner */}
+                          <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-purple-500/20 text-[11px] font-mono text-cyan-400">
+                            <div className="flex items-center gap-1.5">
+                              <MagnifyingGlassPlusIcon className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                              <span className="font-semibold text-cyan-300">Magnify Overview</span>
+                            </div>
+                            <span className="text-[10px] text-purple-300/80 group-hover/desc:text-cyan-300 transition-colors">
+                              🔍 Click / Tap
+                            </span>
+                          </div>
+                        </div>
 
                         {/* Tech Stack Pills */}
                         <div className="flex flex-wrap gap-2 mt-5">
@@ -296,6 +345,146 @@ export const Projects = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* ================= CYBER MAGNIFIER GLASS MODAL ================= */}
+      <AnimatePresence>
+        {selectedProject && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 overflow-x-hidden overflow-y-auto">
+            {/* Backdrop Blur Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProject(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-lg cursor-pointer"
+            />
+
+            {/* Magnifier Glass Container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88, y: 25 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.88, y: 25 }}
+              transition={{ type: "spring", damping: 26, stiffness: 320 }}
+              className="relative w-full max-w-2xl max-h-[88vh] flex flex-col rounded-3xl bg-[#090226]/95 border border-cyan-500/50 shadow-[0_0_50px_rgba(6,182,212,0.25)] backdrop-blur-2xl z-10 overflow-hidden my-auto"
+            >
+              {/* Modal Top Bar */}
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-purple-500/20 bg-[#0d0430]/90 shrink-0">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+                    <MagnifyingGlassPlusIcon className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#030014] border border-cyan-500/40 text-cyan-300 text-[10px] font-mono">
+                        {selectedProject.category}
+                      </span>
+                      <span className="text-gray-400 text-[11px] font-mono hidden sm:inline-block">
+                        MAGNIFIED OVERVIEW
+                      </span>
+                    </div>
+                    <h3 className="text-base sm:text-xl font-bold text-white mt-1 leading-snug">
+                      {selectedProject.title}
+                    </h3>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setSelectedProject(null)}
+                  className="p-2 sm:p-2.5 rounded-full border border-purple-500/30 hover:border-cyan-400 bg-[#030014]/60 text-gray-400 hover:text-white transition-all duration-200 cursor-pointer shrink-0"
+                  aria-label="Close modal"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Content Body */}
+              <div className="p-5 sm:p-7 overflow-y-auto space-y-6">
+                {/* Image Banner */}
+                <div className="relative w-full h-44 sm:h-60 rounded-2xl overflow-hidden border border-purple-500/30 bg-black/50">
+                  <Image
+                    src={getValidImageUrl(selectedProject.image || selectedProject.image_file || selectedProject.image_url)}
+                    alt={selectedProject.title}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#090226] via-transparent to-transparent opacity-80" />
+                  <div className="absolute bottom-3 left-4 px-3 py-1 rounded-full bg-black/70 border border-cyan-400/40 text-cyan-300 text-xs font-mono backdrop-blur-md">
+                    🔍 Detailed Inspection
+                  </div>
+                </div>
+
+                {/* Complete Uncut Description */}
+                <div>
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-cyan-300 mb-2.5 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                    Full Architecture & Description
+                  </h4>
+                  <div className="p-4 sm:p-5 rounded-2xl bg-[#0e0433]/70 border border-purple-500/20 text-gray-200 text-xs sm:text-sm leading-relaxed whitespace-pre-line font-sans select-text">
+                    {selectedProject.description}
+                  </div>
+                </div>
+
+                {/* Tech Stack List */}
+                <div>
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-purple-300 mb-2.5 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                    Integrated Tech Stack
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {(Array.isArray(selectedProject.tech_stack_list)
+                      ? selectedProject.tech_stack_list
+                      : typeof selectedProject.tech_stack === "string"
+                      ? selectedProject.tech_stack.split(/[, ]+/).filter(Boolean)
+                      : []
+                    ).map((tech: string) => (
+                      <span
+                        key={tech}
+                        className="px-3 py-1 text-xs rounded-lg bg-[#14083a] border border-[#7042f8]/40 text-cyan-200 font-mono shadow-sm"
+                      >
+                        #{tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 sm:p-5 border-t border-purple-500/20 bg-[#0d0430]/90 flex items-center justify-end gap-3 shrink-0">
+                {selectedProject.live_url && (
+                  <Link
+                    href={selectedProject.live_url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="flex items-center gap-1.5 sm:gap-2 px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-md shadow-purple-900/40 transition"
+                  >
+                    <span>Live Demo</span>
+                    <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+
+                {selectedProject.github_url && (
+                  <Link
+                    href={selectedProject.github_url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="flex items-center gap-1.5 sm:gap-2 px-4 py-2 sm:py-2.5 rounded-xl border border-purple-500/40 hover:border-cyan-400 bg-[#090226] text-gray-300 hover:text-white text-xs font-semibold transition"
+                  >
+                    <span>GitHub</span>
+                  </Link>
+                )}
+
+                <button
+                  onClick={() => setSelectedProject(null)}
+                  className="px-4 py-2 sm:py-2.5 rounded-xl border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white text-xs font-semibold transition cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
