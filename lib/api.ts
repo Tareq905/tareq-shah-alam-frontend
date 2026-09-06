@@ -136,16 +136,36 @@ export const DEFAULT_SITE_SETTING: SiteSetting = {
   resume_url: "",
 };
 
+export const FALLBACK_PRODUCTION_API_URL = "https://tareq052.pythonanywhere.com";
+
 export async function fetchPortfolioBundle(): Promise<PortfolioBundle | null> {
+  // 1. Primary: Try configured API_BASE_URL (defaults to http://127.0.0.1:8000 for local backend)
   try {
     const res = await fetch(`${API_BASE_URL}/api/all/`, {
       cache: "no-store",
     });
-    if (!res.ok) return null;
-    return await res.json();
+    if (res.ok) {
+      return await res.json();
+    }
   } catch {
-    return null;
+    // If local dev server is unreachable, fall through to fallback
   }
+
+  // 2. Secondary: If primary fails and was not production, fallback to production live backend
+  if (API_BASE_URL !== FALLBACK_PRODUCTION_API_URL) {
+    try {
+      const res = await fetch(`${FALLBACK_PRODUCTION_API_URL}/api/all/`, {
+        cache: "no-store",
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Both unavailable
+    }
+  }
+
+  return null;
 }
 
 export async function submitContactMessage(payload: {
@@ -154,34 +174,37 @@ export async function submitContactMessage(payload: {
   subject: string;
   message: string;
 }): Promise<{ success: boolean; message: string; error?: string }> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/contact/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      return {
-        success: false,
-        message: data.error || "Failed to send message.",
-        error: data.error,
-      };
-    }
-
-    return {
-      success: true,
-      message: data.message || "Message sent successfully!",
-    };
-  } catch {
-    return {
-      success: false,
-      message: "Network error connecting to backend. Please check connection.",
-      error: "Network error",
-    };
+  const endpoints = [API_BASE_URL];
+  if (API_BASE_URL !== FALLBACK_PRODUCTION_API_URL) {
+    endpoints.push(FALLBACK_PRODUCTION_API_URL);
   }
+
+  for (const base of endpoints) {
+    try {
+      const res = await fetch(`${base}/api/contact/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        return {
+          success: true,
+          message: data.message || "Message sent successfully!",
+        };
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return {
+    success: false,
+    message: "Network error connecting to backend. Please check connection.",
+    error: "Network error",
+  };
 }

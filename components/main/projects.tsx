@@ -17,7 +17,7 @@ export const Projects = () => {
   // Use API list or fallback
   const displayProjects = projectsList.length > 0
     ? projectsList
-    : FALLBACK_PROJECTS.map((p, idx) => ({
+    : (FALLBACK_PROJECTS || []).map((p, idx) => ({
         id: idx + 1,
         title: p.title,
         description: p.description,
@@ -33,7 +33,7 @@ export const Projects = () => {
 
   const displayResearch = researchList.length > 0
     ? researchList
-    : FALLBACK_PAPERS.map((r, idx) => ({
+    : (FALLBACK_PAPERS || []).map((r, idx) => ({
         id: idx + 1,
         title: r.title,
         publisher: r.venue || "Technical Research",
@@ -115,7 +115,11 @@ export const Projects = () => {
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             >
               {displayProjects.map((project, idx) => {
-                const techList = project.tech_stack_list || (project.tech_stack ? project.tech_stack.split(",").map((s: string) => s.trim()) : []);
+                const techList = Array.isArray(project.tech_stack_list)
+                  ? project.tech_stack_list
+                  : typeof project.tech_stack === "string"
+                  ? project.tech_stack.split(/[, ]+/).map((s) => s.trim()).filter(Boolean)
+                  : [];
 
                 return (
                   <motion.div
@@ -212,7 +216,11 @@ export const Projects = () => {
               className="flex flex-col gap-6"
             >
               {displayResearch.map((paper, idx) => {
-                const tagsList = paper.tags_list || (paper.tags ? paper.tags.split(",").map((s: string) => s.trim()) : []);
+                const tagsList = Array.isArray(paper.tags_list)
+                  ? paper.tags_list
+                  : typeof paper.tags === "string"
+                  ? paper.tags.split(/[, ]+/).map((s) => s.trim()).filter(Boolean)
+                  : [];
 
                 return (
                   <motion.div

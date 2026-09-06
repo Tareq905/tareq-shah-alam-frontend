@@ -264,7 +264,11 @@ export const Experience = () => {
                 const isSelected = activeNode === index;
                 const meta = LAYER_METAS[index % 3];
                 const NodeIcon = meta.icon;
-                const techList = exp.technologies_list || (exp.technologies ? exp.technologies.split(",").map((s: string) => s.trim()) : []);
+                const techList = Array.isArray(exp.technologies_list)
+                  ? exp.technologies_list
+                  : typeof exp.technologies === "string"
+                  ? exp.technologies.split(/[, ]+/).map((s) => s.trim()).filter(Boolean)
+                  : [];
 
                 return (
                   <div
