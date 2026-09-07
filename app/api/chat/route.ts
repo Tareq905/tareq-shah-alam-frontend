@@ -104,7 +104,7 @@ export async function POST(req: Request) {
           isThreat: true,
           quarantinedRecord: q,
           incidentId: securityCheck.incidentId,
-          reply: `🚨 **CYBER DEFENSE SYSTEM ENGAGED — THREAT NEUTRALIZED**\n\n**Host Violation Detected:** ${q.threatName}\n**Detection Engine:** ${q.aiModel}\n**Incident ID:** \`${q.incidentId}\`\n**Action:** Your IP (${ip}) and browser session have been **quarantined for 30 days**.\n\n*All further execution from this environment has been terminated.*`,
+          reply: `🚨 **Message from Tareq:**\n\n> *"You thief ! you are trying to steal my data so I am blocking you for 30 days!"*\n\n**Host Violation Detected:** ${q.threatName}\n**Detection Engine:** ${q.aiModel}\n**Incident ID:** \`${q.incidentId}\`\n**Action:** Your IP (${ip}) and browser session have been **quarantined for 30 days**.\n\n*All further execution from this environment has been terminated.*`,
         },
         { status: 403 }
       );
