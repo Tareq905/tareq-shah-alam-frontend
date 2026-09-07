@@ -67,7 +67,9 @@ space-portfolio/
     |-- index.ts
   |- context/
     |-- portfolio-context.tsx
+    |-- security-context.tsx
   |- lib/
+    |-- security/
     |-- api.ts
     |-- audio-effects.ts
     |-- motion.ts
@@ -78,6 +80,7 @@ space-portfolio/
   |- .eslintrc.json
   |- .gitignore
   |- eslint.config.mjs
+  |- middleware.ts
   |- netlify.toml
   |- next.config.js
   |- package-lock.json
