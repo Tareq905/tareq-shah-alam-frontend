@@ -255,9 +255,16 @@ IMPORTANT INSTRUCTIONS:
               >
                 <ExclamationTriangleIcon className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                 <div>
-                  <h5 className="font-bold text-red-300">Submission Blocked by Security Filters</h5>
+                  <h5 className="font-bold text-red-300">
+                    {errorMessage.toLowerCase().includes("security") ||
+                    errorMessage.toLowerCase().includes("threat") ||
+                    errorMessage.toLowerCase().includes("blocked")
+                      ? "Security Filter Alert"
+                      : "Submission Notice"}
+                  </h5>
                   <p className="mt-0.5 text-red-200/90">{errorMessage}</p>
                 </div>
+
               </motion.div>
             )}
           </AnimatePresence>

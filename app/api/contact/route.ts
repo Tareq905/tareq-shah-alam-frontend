@@ -8,7 +8,8 @@ import {
 } from "@/lib/security/ip-blocklist-store";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://tareqshahalam.pythonanywhere.com";
+  process.env.NEXT_PUBLIC_API_URL || "https://tareq052.pythonanywhere.com";
+
 
 export async function POST(req: Request) {
   try {
