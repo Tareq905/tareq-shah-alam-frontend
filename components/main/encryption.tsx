@@ -67,7 +67,7 @@ export const Encryption = () => {
           {activeView === "terminal"
             ? "Interactive ML/AI Engineer Terminal Shell Workstation (Linux / Bash)"
             : isUnlocked
-            ? "Interactive AI Assistant powered by Groq LLM inference"
+            ? "Interactive AI Assistant with live document & image analysis"
             : "Hold down the neural vault to unlock the AI Chatbot or launch the CLI Terminal"}
         </p>
 
@@ -250,7 +250,7 @@ export const Encryption = () => {
       <div className="absolute z-[20] bottom-4 px-4 text-center">
         <div className="cursive text-base sm:text-xl font-medium text-gray-400">
           {isUnlocked
-            ? "Ask anything about Tareq's ML expertise or chat with Groq LLM"
+            ? "Ask anything about Tareq's ML expertise or explore general AI topics"
             : "Data unlocks intelligence when models learn to reason"}
         </div>
       </div>

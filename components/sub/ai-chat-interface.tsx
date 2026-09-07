@@ -48,7 +48,7 @@ export const AiChatInterface = ({ onLock }: AiChatInterfaceProps) => {
       id: "welcome-1",
       role: "assistant",
       content:
-        "👋 Welcome! I am **Tareq's AI Assistant**, powered by **Groq LLM**. Ask me anything about **Md Tareq Shah Alam's** Machine Learning expertise, NLP projects, or switch to **Random Chat** to upload **Images 🖼️ & Documents 📄** for live AI analysis!",
+        "👋 Welcome! I am **Tareq's AI Assistant**. Ask me anything about **Md Tareq Shah Alam's** Machine Learning expertise, NLP projects, or switch to **General AI Chat** to ask any questions and upload **Images 🖼️ & Documents 📄**!",
       timestamp: "Online",
     },
   ]);
@@ -175,7 +175,7 @@ export const AiChatInterface = ({ onLock }: AiChatInterfaceProps) => {
           id: `error-${Date.now()}`,
           role: "assistant",
           content:
-            "⚠️ Network error. Please ensure your dev server is running and Groq API key is valid.",
+            "⚠️ Network error. Please check your internet connection and try again.",
           timestamp: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -198,7 +198,7 @@ export const AiChatInterface = ({ onLock }: AiChatInterfaceProps) => {
         content:
           newMode === "about"
             ? "👤 Switched to **About Tareq** mode. Ask anything about Md Tareq Shah Alam's ML/AI skills, projects, and background!"
-            : "⚡ Switched to **Random / General AI Chat** powered by **Groq**. You can upload **Images 🖼️ & Documents 📄** using the 📎 button below!",
+            : "⚡ Switched to **General AI Chat**. Feel free to ask any questions! You can also upload **Images 🖼️ & Documents 📄** using the 📎 button below.",
         timestamp: "Online",
       },
     ]);
@@ -233,7 +233,7 @@ export const AiChatInterface = ({ onLock }: AiChatInterfaceProps) => {
             }`}
           >
             <span>⚡</span>
-            <span>Random AI Chat</span>
+            <span>General AI Chat</span>
           </button>
         </div>
 
@@ -242,7 +242,7 @@ export const AiChatInterface = ({ onLock }: AiChatInterfaceProps) => {
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
             <span>
-              Groq • {mode === "about" ? "GPT-OSS 20B" : "GPT-OSS 120B"}
+              AI • {mode === "about" ? "Portfolio Mode" : "General Mode"}
             </span>
           </div>
 
