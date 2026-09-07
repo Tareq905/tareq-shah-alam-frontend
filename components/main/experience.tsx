@@ -83,6 +83,38 @@ export const Experience = () => {
   const [activeNode, setActiveNode] = useState<number | null>(0);
   const { experience: rawExperiences, education: rawEducation } = usePortfolio();
 
+  useEffect(() => {
+    const handleTabSwitch = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail === "experience" || customEvent.detail === "education") {
+        setActiveTab(customEvent.detail);
+      }
+    };
+
+    window.addEventListener("switch-experience-tab", handleTabSwitch);
+
+    // Check initial hash or on hashchange
+    if (window.location.hash === "#education") {
+      setActiveTab("education");
+    } else if (window.location.hash === "#experience" || window.location.hash === "#job-experience") {
+      setActiveTab("experience");
+    }
+
+    const handleHashChange = () => {
+      if (window.location.hash === "#education") {
+        setActiveTab("education");
+      } else if (window.location.hash === "#experience" || window.location.hash === "#job-experience") {
+        setActiveTab("experience");
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+
+    return () => {
+      window.removeEventListener("switch-experience-tab", handleTabSwitch);
+      window.removeEventListener("hashchange", handleHashChange);
+    };
+  }, []);
+
   const handleNodeClick = (index: number) => {
     setActiveNode(activeNode === index ? null : index);
   };

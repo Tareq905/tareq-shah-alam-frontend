@@ -21,6 +21,7 @@ interface DropdownItem {
   title: string;
   description: string;
   link: string;
+  tabTarget?: "experience" | "education";
   isExternal?: boolean;
 }
 
@@ -70,6 +71,21 @@ const NAV_ITEMS: NavItem[] = [
     title: "Experience",
     link: "#experience",
     icon: HiOutlineBriefcase,
+    hasDropdown: true,
+    dropdownItems: [
+      {
+        title: "Job Experience",
+        description: "Production ML, AI & engineering roles",
+        link: "#experience",
+        tabTarget: "experience",
+      },
+      {
+        title: "Education",
+        description: "Academic degrees & research foundations",
+        link: "#experience",
+        tabTarget: "education",
+      },
+    ],
   },
   {
     id: "projects",
@@ -88,9 +104,9 @@ const NAV_ITEMS: NavItem[] = [
 export const Navbar = () => {
   const [activeTab, setActiveTab] = useState<string>("home");
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [isMobileAboutExpanded, setIsMobileAboutExpanded] = useState<boolean>(false);
+  const [expandedMobileNavId, setExpandedMobileNavId] = useState<string | null>(null);
 
   const isManualClickRef = useRef<boolean>(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -153,7 +169,7 @@ export const Navbar = () => {
     e.preventDefault();
     setActiveTab(item.id);
     isManualClickRef.current = true;
-    setIsDropdownOpen(false);
+    setOpenDropdownId(null);
 
     if (item.link === "#hero" || item.link === "#") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -169,16 +185,44 @@ export const Navbar = () => {
     }, 750);
   };
 
-  const handleMouseEnterAbout = () => {
+  const handleDropdownItemClick = (
+    item: NavItem,
+    dropItem: DropdownItem,
+    e: React.MouseEvent
+  ) => {
+    if (!dropItem.isExternal) {
+      e.preventDefault();
+      setActiveTab(item.id);
+      setOpenDropdownId(null);
+      isManualClickRef.current = true;
+
+      if (dropItem.tabTarget) {
+        window.dispatchEvent(
+          new CustomEvent("switch-experience-tab", { detail: dropItem.tabTarget })
+        );
+      }
+
+      const targetEl = document.querySelector(dropItem.link);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: "smooth" });
+      }
+
+      setTimeout(() => {
+        isManualClickRef.current = false;
+      }, 750);
+    }
+  };
+
+  const handleMouseEnterItem = (itemId: string) => {
     if (dropdownTimeoutRef.current) {
       clearTimeout(dropdownTimeoutRef.current);
     }
-    setIsDropdownOpen(true);
+    setOpenDropdownId(itemId);
   };
 
-  const handleMouseLeaveAbout = () => {
+  const handleMouseLeaveItem = () => {
     dropdownTimeoutRef.current = setTimeout(() => {
-      setIsDropdownOpen(false);
+      setOpenDropdownId(null);
     }, 180);
   };
 
@@ -216,7 +260,7 @@ export const Navbar = () => {
         {/* Center: Mathematically Centered Animated Capsule Pill Navigation Bar */}
         <div className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2">
           <div className="relative flex items-center p-1 rounded-full bg-[#07011a]/75 backdrop-blur-xl border border-white/10 shadow-[0_4px_25px_rgba(0,0,0,0.6),0_0_20px_rgba(112,66,248,0.15)]">
-            {/* Specular bottom edge reflection light (from reference image) */}
+            {/* Specular bottom edge reflection light */}
             <div className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-36 lg:w-48 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent blur-[0.5px] pointer-events-none" />
             <div className="absolute -bottom-[2px] left-1/2 -translate-x-1/2 w-24 lg:w-32 h-[2px] bg-cyan-400/50 blur-[2px] pointer-events-none" />
 
@@ -228,6 +272,7 @@ export const Navbar = () => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               const isHovered = hoveredTab === item.id;
+              const isDropdownActive = openDropdownId === item.id;
 
               return (
                 <div
@@ -235,11 +280,11 @@ export const Navbar = () => {
                   className="relative"
                   onMouseEnter={() => {
                     setHoveredTab(item.id);
-                    if (item.hasDropdown) handleMouseEnterAbout();
+                    if (item.hasDropdown) handleMouseEnterItem(item.id);
                   }}
                   onMouseLeave={() => {
                     setHoveredTab(null);
-                    if (item.hasDropdown) handleMouseLeaveAbout();
+                    if (item.hasDropdown) handleMouseLeaveItem();
                   }}
                 >
                   <a
@@ -263,7 +308,7 @@ export const Navbar = () => {
                     {item.hasDropdown && (
                       <HiOutlineChevronDown
                         className={`w-3 h-3 transition-transform duration-200 ${
-                          isDropdownOpen
+                          isDropdownActive
                             ? "rotate-180 text-cyan-300"
                             : "text-gray-400"
                         }`}
@@ -297,18 +342,18 @@ export const Navbar = () => {
                     />
                   )}
 
-                  {/* Dropdown Menu for "About" */}
+                  {/* Dropdown Menu */}
                   {item.hasDropdown && (
                     <AnimatePresence>
-                      {isDropdownOpen && (
+                      {isDropdownActive && (
                         <motion.div
                           initial={{ opacity: 0, y: 8, scale: 0.96 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 8, scale: 0.96 }}
                           transition={{ duration: 0.16, ease: "easeOut" }}
                           className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 p-1.5 rounded-2xl bg-[#08021c]/95 backdrop-blur-2xl border border-purple-500/30 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_20px_rgba(112,66,248,0.25)] z-50 flex flex-col gap-1 overflow-hidden"
-                          onMouseEnter={handleMouseEnterAbout}
-                          onMouseLeave={handleMouseLeaveAbout}
+                          onMouseEnter={() => handleMouseEnterItem(item.id)}
+                          onMouseLeave={handleMouseLeaveItem}
                         >
                           <div className="absolute -top-[1px] left-1/2 -translate-x-1/2 w-24 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
 
@@ -318,17 +363,7 @@ export const Navbar = () => {
                               href={dropItem.link}
                               target={dropItem.isExternal ? "_blank" : undefined}
                               rel={dropItem.isExternal ? "noreferrer noopener" : undefined}
-                              onClick={(e) => {
-                                if (!dropItem.isExternal) {
-                                  e.preventDefault();
-                                  setIsDropdownOpen(false);
-                                  setActiveTab("about");
-                                  const targetEl = document.querySelector(dropItem.link);
-                                  if (targetEl) {
-                                    targetEl.scrollIntoView({ behavior: "smooth" });
-                                  }
-                                }
-                              }}
+                              onClick={(e) => handleDropdownItemClick(item, dropItem, e)}
                               className="group flex flex-col px-3 py-2 rounded-xl hover:bg-purple-900/30 border border-transparent hover:border-purple-500/30 transition-all text-left"
                             >
                               <div className="flex items-center justify-between text-xs font-semibold text-gray-200 group-hover:text-cyan-300 transition-colors">
@@ -357,7 +392,7 @@ export const Navbar = () => {
         </div>
 
         {/* Right Area: Talk with me (Theme Matched) + Try CLI Button */}
-        <div className="hidden md:flex flex-row items-center gap-3">
+        <div className="hidden md:flex flex-row items-center gap-3 z-10">
           {/* Animated Cosmic "Talk with me" Button */}
           <a
             href={whatsappLink}
@@ -410,13 +445,14 @@ export const Navbar = () => {
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
+                const isExpanded = expandedMobileNavId === item.id;
 
                 return (
                   <div key={item.id} className="flex flex-col">
                     <button
                       onClick={(e) => {
                         if (item.hasDropdown) {
-                          setIsMobileAboutExpanded(!isMobileAboutExpanded);
+                          setExpandedMobileNavId(isExpanded ? null : item.id);
                         } else {
                           handleNavClick(item, e as unknown as React.MouseEvent);
                           setIsMobileMenuOpen(false);
@@ -435,14 +471,14 @@ export const Navbar = () => {
                       {item.hasDropdown && (
                         <HiOutlineChevronDown
                           className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                            isMobileAboutExpanded ? "rotate-180 text-cyan-300" : ""
+                            isExpanded ? "rotate-180 text-cyan-300" : ""
                           }`}
                         />
                       )}
                     </button>
 
-                    {/* Expandable Sub-items for About */}
-                    {item.hasDropdown && isMobileAboutExpanded && (
+                    {/* Expandable Sub-items */}
+                    {item.hasDropdown && isExpanded && (
                       <div className="flex flex-col gap-1.5 pl-6 pr-2 py-2 mt-1 border-l-2 border-purple-500/30 ml-4">
                         {item.dropdownItems?.map((dropItem) => (
                           <a
@@ -451,19 +487,18 @@ export const Navbar = () => {
                             target={dropItem.isExternal ? "_blank" : undefined}
                             rel={dropItem.isExternal ? "noreferrer noopener" : undefined}
                             onClick={(e) => {
-                              if (!dropItem.isExternal) {
-                                e.preventDefault();
-                                setActiveTab("about");
-                                setIsMobileMenuOpen(false);
-                                const targetEl = document.querySelector(dropItem.link);
-                                if (targetEl) targetEl.scrollIntoView({ behavior: "smooth" });
-                              }
+                              handleDropdownItemClick(item, dropItem, e);
+                              setIsMobileMenuOpen(false);
                             }}
                             className="flex items-center justify-between py-1.5 px-3 rounded-lg text-xs text-gray-300 hover:text-cyan-300 hover:bg-purple-950/40 transition-colors"
                           >
                             <span>{dropItem.title}</span>
-                            {dropItem.isExternal && (
+                            {dropItem.isExternal ? (
                               <HiOutlineArrowTopRightOnSquare className="w-3 h-3 text-gray-500" />
+                            ) : (
+                              <span className="text-[10px] text-gray-500 group-hover:text-cyan-400 font-mono">
+                                →
+                              </span>
                             )}
                           </a>
                         ))}
