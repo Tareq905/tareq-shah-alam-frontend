@@ -10,6 +10,7 @@ import { CustomCursor } from "@/components/sub/custom-cursor";
 import { WaterTouchRipple } from "@/components/sub/water-touch-ripple";
 import { BackgroundMusic } from "@/components/sub/background-music";
 import { PortfolioProvider } from "@/context/portfolio-context";
+import { SecurityProvider } from "@/context/security-context";
 import { siteConfig } from "@/config";
 import { cn } from "@/lib/utils";
 
@@ -34,14 +35,16 @@ export default function RootLayout({ children }: PropsWithChildren) {
         )}
       >
         <PortfolioProvider>
-          <BackgroundMusic />
-          <CustomCursor />
-          <WaterTouchRipple />
-          <Preloader />
-          <StarsCanvas />
-          <Navbar />
-          {children}
-          <Footer />
+          <SecurityProvider>
+            <BackgroundMusic />
+            <CustomCursor />
+            <WaterTouchRipple />
+            <Preloader />
+            <StarsCanvas />
+            <Navbar />
+            {children}
+            <Footer />
+          </SecurityProvider>
         </PortfolioProvider>
       </body>
     </html>

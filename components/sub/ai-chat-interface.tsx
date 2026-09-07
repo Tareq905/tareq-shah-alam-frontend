@@ -156,6 +156,17 @@ export const AiChatInterface = ({ onLock }: AiChatInterfaceProps) => {
 
       const data = await res.json();
 
+      if (res.status === 403 && data.quarantinedRecord) {
+        try {
+          localStorage.setItem(
+            "tareq_sec_quarantine",
+            JSON.stringify(data.quarantinedRecord)
+          );
+        } catch {}
+        window.location.reload();
+        return;
+      }
+
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",

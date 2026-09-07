@@ -1,4 +1,12 @@
 import { NextResponse } from "next/server";
+import {
+  inspectPayloadAndEnforce,
+} from "@/lib/security/security-engine";
+import {
+  getQuarantineRecord,
+  normalizeIp,
+  THIRTY_DAYS_MS,
+} from "@/lib/security/ip-blocklist-store";
 
 const TAREQ_SYSTEM_PROMPT = `You are the elite AI Executive Assistant & Gatekeeper on Md Tareq Shah Alam's space portfolio.
 Your mission is to represent Md Tareq Shah Alam with utmost loyalty, supreme professionalism, high intelligence, and strict boundaries.
@@ -56,7 +64,59 @@ Format your responses with clean Markdown.`;
 
 export async function POST(req: Request) {
   try {
+    const rawIp =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "127.0.0.1";
+    const ip = normalizeIp(rawIp);
+
+    // 1. Check if IP is already quarantined for 30 days
+    const existingQuarantine = getQuarantineRecord(ip);
+    if (existingQuarantine) {
+      return NextResponse.json(
+        {
+          error: "ACCESS_DENIED_SECURITY_QUARANTINE",
+          isThreat: true,
+          quarantinedRecord: existingQuarantine,
+          reply: `🚨 **SECURITY PROTOCOL ENGAGED (403)**\n\nYour IP (${ip}) has been **quarantined for 30 days** due to a detected ${existingQuarantine.threatName}.\n\n- **Incident Reference**: \`${existingQuarantine.incidentId}\`\n- **Violation**: ${existingQuarantine.reason}\n- **Quarantined Until**: ${new Date(existingQuarantine.expiresAt).toUTCString()}\n\nFurther requests from this host are locked down.`,
+        },
+        { status: 403 }
+      );
+    }
+
     const { messages, mode } = await req.json();
+
+    // 2. Extract latest user input and run Security Inspection
+    const lastUserMsg =
+      messages && messages.length > 0 ? messages[messages.length - 1] : null;
+    const latestText = lastUserMsg?.content || "";
+
+    const securityCheck = await inspectPayloadAndEnforce(latestText, ip, {
+      triggerAiAnalysis: true,
+      apiKey: process.env.GROQ_API_KEY,
+    });
+
+    if (securityCheck.isThreat && securityCheck.quarantinedRecord) {
+      const q = securityCheck.quarantinedRecord;
+      const res = NextResponse.json(
+        {
+          error: "ACCESS_DENIED_SECURITY_QUARANTINE",
+          isThreat: true,
+          quarantinedRecord: q,
+          incidentId: securityCheck.incidentId,
+          reply: `🚨 **CYBER DEFENSE SYSTEM ENGAGED — THREAT NEUTRALIZED**\n\n**Host Violation Detected:** ${q.threatName}\n**Detection Engine:** ${q.aiModel}\n**Incident ID:** \`${q.incidentId}\`\n**Action:** Your IP (${ip}) and browser session have been **quarantined for 30 days**.\n\n*All further execution from this environment has been terminated.*`,
+        },
+        { status: 403 }
+      );
+
+      res.cookies.set("tareq_sec_quarantine", JSON.stringify(q), {
+        maxAge: Math.floor(THIRTY_DAYS_MS / 1000),
+        path: "/",
+        sameSite: "lax",
+      });
+
+      return res;
+    }
 
     const systemPrompt =
       mode === "about" ? TAREQ_SYSTEM_PROMPT : GENERAL_SYSTEM_PROMPT;
