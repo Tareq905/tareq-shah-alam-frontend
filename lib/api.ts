@@ -179,38 +179,56 @@ export async function submitContactMessage(payload: {
   email: string;
   subject: string;
   message: string;
-}): Promise<{ success: boolean; message: string; error?: string }> {
-  const endpoints = [API_BASE_URL];
-  if (API_BASE_URL !== FALLBACK_PRODUCTION_API_URL) {
-    endpoints.push(FALLBACK_PRODUCTION_API_URL);
-  }
-
-  for (const base of endpoints) {
-    try {
-      const res = await fetch(`${base}/api/contact/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        return {
-          success: true,
-          message: data.message || "Message sent successfully!",
-        };
-      }
-    } catch {
-      continue;
+}): Promise<{
+  success: boolean;
+  message: string;
+  isThreat?: boolean;
+  quarantinedRecord?: any;
+  error?: string;
+}> {
+  try {
+    let deviceId = "server";
+    if (typeof window !== "undefined") {
+      deviceId = localStorage.getItem("tareq_device_id") || "DEV-CLIENT";
     }
-  }
 
-  return {
-    success: false,
-    message: "Network error connecting to backend. Please check connection.",
-    error: "Network error",
-  };
+    const res = await fetch("/api/contact", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-device-id": deviceId,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (res.status === 403 && data.quarantinedRecord) {
+      return {
+        success: false,
+        isThreat: true,
+        quarantinedRecord: data.quarantinedRecord,
+        message: data.message || "Threat intercepted and quarantined for 30 days.",
+      };
+    }
+
+    if (res.ok && data.success) {
+      return {
+        success: true,
+        message: data.message || "Message sent successfully!",
+      };
+    }
+
+    return {
+      success: false,
+      message: data.message || "Failed to deliver inquiry.",
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err?.message || "Network error connecting to contact gateway.",
+      error: "Network error",
+    };
+  }
 }
+

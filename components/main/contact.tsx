@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { EnvelopeIcon, MapPinIcon, SparklesIcon, UserIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { submitContactMessage } from "@/lib/api";
 import { usePortfolio } from "@/context/portfolio-context";
+import { useSecurity, getOrCreateDeviceId } from "@/context/security-context";
 
 export const Contact = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,7 @@ export const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const { siteSetting } = usePortfolio();
+  const { inspectPayload } = useSecurity();
 
   const siteEmail = siteSetting?.email || "tareqshah.027@gmail.com";
 
@@ -30,6 +32,13 @@ export const Contact = () => {
     const name = formData.name.trim() || "a professional collaborator";
     const email = formData.email.trim() || "contact email";
     const subject = formData.subject.trim() || "AI & Machine Learning project collaboration";
+
+    // Inspect draft inputs for hostile payloads
+    const checkDraft = await inspectPayload(`${name} ${email} ${subject}`);
+    if (checkDraft.isThreat) {
+      setIsGeneratingAiMessage(false);
+      return;
+    }
 
     const prompt = `Please write a concise, articulate, and professional contact message to Md Tareq Shah Alam (Machine Learning Engineer & Data Scientist).
 Sender Details:
@@ -45,7 +54,10 @@ IMPORTANT INSTRUCTIONS:
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-device-id": getOrCreateDeviceId(),
+        },
         body: JSON.stringify({
           messages: [{ role: "user", content: prompt }],
           mode: "random",
@@ -83,6 +95,16 @@ IMPORTANT INSTRUCTIONS:
     setIsSubmitting(true);
     setErrorMessage("");
 
+    // 1. Instant AI & Heuristic Security Inspection across all contact fields
+    const combinedPayload = `${formData.name} ${formData.email} ${formData.subject} ${formData.message}`.trim();
+    const inspection = await inspectPayload(combinedPayload);
+    if (inspection.isThreat) {
+      setIsSubmitting(false);
+      // The Animated Red Alert Popup is automatically engaged by inspectPayload!
+      return;
+    }
+
+    // 2. Submit through protected contact gateway
     const result = await submitContactMessage({
       name: formData.name.trim(),
       email: formData.email.trim(),
@@ -92,6 +114,12 @@ IMPORTANT INSTRUCTIONS:
 
     setIsSubmitting(false);
 
+    if (result.isThreat && result.quarantinedRecord) {
+      localStorage.setItem("tareq_sec_quarantine", JSON.stringify(result.quarantinedRecord));
+      location.reload();
+      return;
+    }
+
     if (result.success) {
       setSubmitted(true);
       setFormData({ name: "", email: "", subject: "", message: "" });
@@ -100,6 +128,7 @@ IMPORTANT INSTRUCTIONS:
       setErrorMessage(result.message || "Failed to verify and submit inquiry.");
     }
   };
+
 
   return (
     <section
