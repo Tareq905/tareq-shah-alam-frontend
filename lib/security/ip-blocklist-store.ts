@@ -3,6 +3,7 @@ import { ThreatCategoryKey, THREAT_TAXONOMY } from "./threat-taxonomy";
 export interface QuarantineRecord {
   incidentId: string;
   ip: string;
+  deviceId?: string;
   threatCategory: ThreatCategoryKey;
   threatName: string;
   severity: string;
@@ -14,6 +15,7 @@ export interface QuarantineRecord {
 }
 
 // Global in-memory block registry for the server runtime
+// Keyed by DEV:{deviceId} or IP:{ip} to isolate client browser vs router WAN IP
 const globalQuarantineMap = new Map<string, QuarantineRecord>();
 
 export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -43,6 +45,7 @@ export function quarantineIp(
   category: ThreatCategoryKey,
   reason: string,
   options?: {
+    deviceId?: string;
     aiModel?: string;
     payloadSnippet?: string;
     incidentId?: string;
@@ -57,6 +60,7 @@ export function quarantineIp(
   const record: QuarantineRecord = {
     incidentId,
     ip,
+    deviceId: options?.deviceId,
     threatCategory: category,
     threatName: def?.name || category,
     severity: def?.severity || "HIGH",
@@ -69,47 +73,75 @@ export function quarantineIp(
       : undefined,
   };
 
-  globalQuarantineMap.set(ip, record);
+  // 1. Index specifically by deviceId to protect innocent users on the same router
+  if (options?.deviceId) {
+    globalQuarantineMap.set(`DEV:${options.deviceId}`, record);
+  }
+  // 2. Also register incident
+  globalQuarantineMap.set(`INC:${incidentId}`, record);
+
   return record;
 }
 
-export function getQuarantineRecord(rawIp: string): QuarantineRecord | null {
-  const ip = normalizeIp(rawIp);
-  const record = globalQuarantineMap.get(ip);
-  if (!record) return null;
-
-  // Check if 30-day quarantine has expired
-  if (Date.now() > record.expiresAt) {
-    globalQuarantineMap.delete(ip);
-    return null;
+export function getQuarantineRecord(target: {
+  deviceId?: string | null;
+  rawIp?: string | null;
+  cookieRecord?: QuarantineRecord | null;
+}): QuarantineRecord | null {
+  // 1. Browser persistent cookie verification (highest accuracy for client system)
+  if (target.cookieRecord && target.cookieRecord.expiresAt) {
+    if (Date.now() <= target.cookieRecord.expiresAt) {
+      return target.cookieRecord;
+    }
   }
 
-  return record;
+  // 2. Specific device hardware/browser ID check
+  if (target.deviceId) {
+    const devRecord = globalQuarantineMap.get(`DEV:${target.deviceId}`);
+    if (devRecord) {
+      if (Date.now() > devRecord.expiresAt) {
+        globalQuarantineMap.delete(`DEV:${target.deviceId}`);
+        return null;
+      }
+      return devRecord;
+    }
+  }
+
+  // NOTE: We deliberately do NOT fallback to blocking the entire rawIp for regular web requests,
+  // because multiple devices/family/coworkers share the exact same WAN router IP.
+  return null;
 }
 
-export function unquarantineIp(rawIp: string): boolean {
-  const ip = normalizeIp(rawIp);
-  return globalQuarantineMap.delete(ip);
+export function unquarantineTarget(target: {
+  deviceId?: string | null;
+  rawIp?: string | null;
+}): boolean {
+  let removed = false;
+  if (target.deviceId) {
+    if (globalQuarantineMap.delete(`DEV:${target.deviceId}`)) removed = true;
+  }
+  if (target.rawIp) {
+    const ip = normalizeIp(target.rawIp);
+    if (globalQuarantineMap.delete(`IP:${ip}`)) removed = true;
+  }
+  return removed;
 }
 
 export function clearAllQuarantines(): void {
   globalQuarantineMap.clear();
 }
 
-export function isIpQuarantined(rawIp: string): boolean {
-  return !!getQuarantineRecord(rawIp);
-}
-
 export function getAllActiveQuarantines(): QuarantineRecord[] {
   const now = Date.now();
   const active: QuarantineRecord[] = [];
-  for (const [ip, record] of globalQuarantineMap.entries()) {
-    if (now <= record.expiresAt) {
-      active.push(record);
-    } else {
-      globalQuarantineMap.delete(ip);
+  for (const [key, record] of globalQuarantineMap.entries()) {
+    if (key.startsWith("DEV:") || key.startsWith("IP:")) {
+      if (now <= record.expiresAt) {
+        active.push(record);
+      } else {
+        globalQuarantineMap.delete(key);
+      }
     }
   }
   return active;
 }
-

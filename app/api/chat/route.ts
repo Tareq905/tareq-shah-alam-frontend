@@ -6,7 +6,9 @@ import {
   getQuarantineRecord,
   normalizeIp,
   THIRTY_DAYS_MS,
+  QuarantineRecord,
 } from "@/lib/security/ip-blocklist-store";
+
 
 const TAREQ_SYSTEM_PROMPT = `You are the elite AI Executive Assistant & Gatekeeper on Md Tareq Shah Alam's space portfolio.
 Your mission is to represent Md Tareq Shah Alam with utmost loyalty, supreme professionalism, high intelligence, and strict boundaries.
@@ -69,16 +71,28 @@ export async function POST(req: Request) {
       req.headers.get("x-real-ip") ||
       "127.0.0.1";
     const ip = normalizeIp(rawIp);
+    const deviceId = req.headers.get("x-device-id") || undefined;
 
-    // 1. Check if IP is already quarantined for 30 days
-    const existingQuarantine = getQuarantineRecord(ip);
+    let cookieRecord: QuarantineRecord | null = null;
+    const cookieHeader = req.headers.get("cookie") || "";
+    const match = cookieHeader.match(/(?:^|; )tareq_sec_quarantine=([^;]*)/);
+    if (match && match[1]) {
+      try {
+        cookieRecord = JSON.parse(decodeURIComponent(match[1]));
+      } catch {
+        // Ignore JSON error
+      }
+    }
+
+    // 1. Check if this specific client device/browser is quarantined for 30 days
+    const existingQuarantine = getQuarantineRecord({ deviceId, rawIp: ip, cookieRecord });
     if (existingQuarantine) {
       return NextResponse.json(
         {
           error: "ACCESS_DENIED_SECURITY_QUARANTINE",
           isThreat: true,
           quarantinedRecord: existingQuarantine,
-          reply: `🚨 **SECURITY PROTOCOL ENGAGED (403)**\n\nYour IP (${ip}) has been **quarantined for 30 days** due to a detected ${existingQuarantine.threatName}.\n\n- **Incident Reference**: \`${existingQuarantine.incidentId}\`\n- **Violation**: ${existingQuarantine.reason}\n- **Quarantined Until**: ${new Date(existingQuarantine.expiresAt).toUTCString()}\n\nFurther requests from this host are locked down.`,
+          reply: `🚨 **SECURITY PROTOCOL ENGAGED (403)**\n\nYour session and device have been **quarantined for 30 days** due to a detected ${existingQuarantine.threatName}.\n\n- **Incident Reference**: \`${existingQuarantine.incidentId}\`\n- **Violation**: ${existingQuarantine.reason}\n- **Quarantined Until**: ${new Date(existingQuarantine.expiresAt).toUTCString()}\n\nFurther requests from this environment are locked down.`,
         },
         { status: 403 }
       );
@@ -92,6 +106,7 @@ export async function POST(req: Request) {
     const latestText = lastUserMsg?.content || "";
 
     const securityCheck = await inspectPayloadAndEnforce(latestText, ip, {
+      deviceId,
       triggerAiAnalysis: true,
       apiKey: process.env.GROQ_API_KEY,
     });

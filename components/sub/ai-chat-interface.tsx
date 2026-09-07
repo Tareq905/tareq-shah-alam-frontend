@@ -5,6 +5,7 @@ import { SparklesIcon } from "@heroicons/react/24/solid";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { FormattedMarkdown } from "@/components/sub/formatted-markdown";
+import { getOrCreateDeviceId } from "@/context/security-context";
 
 interface AttachedFile {
   name: string;
@@ -147,12 +148,16 @@ export const AiChatInterface = ({ onLock }: AiChatInterfaceProps) => {
 
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-device-id": getOrCreateDeviceId(),
+        },
         body: JSON.stringify({
           messages: payloadMessages,
           mode,
         }),
       });
+
 
       const data = await res.json();
 

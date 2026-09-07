@@ -265,6 +265,7 @@ export async function inspectPayloadAndEnforce(
   options?: {
     apiKey?: string;
     triggerAiAnalysis?: boolean;
+    deviceId?: string;
   }
 ): Promise<SecurityInspectionResult> {
   const incidentId = generateIncidentId();
@@ -277,6 +278,7 @@ export async function inspectPayloadAndEnforce(
       heuristic.category,
       heuristic.reason || "Deterministic security signature triggered.",
       {
+        deviceId: options?.deviceId,
         aiModel: "Deterministic Heuristic WAF Core",
         payloadSnippet: input,
         incidentId,
@@ -306,11 +308,13 @@ export async function inspectPayloadAndEnforce(
         aiResult.category,
         aiResult.reason || "Qwen 3.6 27B classified input as malicious exploit.",
         {
+          deviceId: options?.deviceId,
           aiModel: "Qwen 3.6 27B Threat Intelligence",
           payloadSnippet: input,
           incidentId,
         }
       );
+
 
       return {
         isThreat: true,
