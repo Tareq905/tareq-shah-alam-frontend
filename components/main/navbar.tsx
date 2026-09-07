@@ -183,9 +183,9 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="w-full h-[68px] fixed top-0 bg-[#030014]/40 backdrop-blur-md z-50 px-4 sm:px-8 border-b border-purple-950/20 transition-all">
+    <nav className="w-full h-[68px] fixed top-0 bg-[#030014]/50 backdrop-blur-xl z-50 px-6 sm:px-10 lg:px-12 border-b border-purple-900/25 shadow-lg shadow-[#2A0E61]/25 transition-all">
       {/* Navbar Content */}
-      <div className="w-full max-w-7xl h-full flex items-center justify-between mx-auto">
+      <div className="relative w-full h-full flex items-center justify-between">
         {/* Left: Brand Logo + Name */}
         <Link
           href="#hero"
@@ -194,7 +194,7 @@ export const Navbar = () => {
             setActiveTab("home");
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          className="flex items-center gap-3 group cursor-pointer"
+          className="flex items-center gap-3 group cursor-pointer z-10"
         >
           <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-900/60 via-[#0d0426] to-cyan-950/70 border border-purple-500/40 group-hover:border-cyan-400 shadow-[0_0_15px_rgba(112,66,248,0.35)] group-hover:shadow-[0_0_20px_rgba(6,182,212,0.6)] transition-all duration-300">
             <Image
@@ -213,8 +213,8 @@ export const Navbar = () => {
           </div>
         </Link>
 
-        {/* Center: Animated Capsule Pill Navigation Bar (Matching User Reference Image) */}
-        <div className="hidden md:flex items-center justify-center">
+        {/* Center: Mathematically Centered Animated Capsule Pill Navigation Bar */}
+        <div className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2">
           <div className="relative flex items-center p-1 rounded-full bg-[#07011a]/75 backdrop-blur-xl border border-white/10 shadow-[0_4px_25px_rgba(0,0,0,0.6),0_0_20px_rgba(112,66,248,0.15)]">
             {/* Specular bottom edge reflection light (from reference image) */}
             <div className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-36 lg:w-48 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent blur-[0.5px] pointer-events-none" />
