@@ -87,6 +87,15 @@ export function getQuarantineRecord(rawIp: string): QuarantineRecord | null {
   return record;
 }
 
+export function unquarantineIp(rawIp: string): boolean {
+  const ip = normalizeIp(rawIp);
+  return globalQuarantineMap.delete(ip);
+}
+
+export function clearAllQuarantines(): void {
+  globalQuarantineMap.clear();
+}
+
 export function isIpQuarantined(rawIp: string): boolean {
   return !!getQuarantineRecord(rawIp);
 }
@@ -103,3 +112,4 @@ export function getAllActiveQuarantines(): QuarantineRecord[] {
   }
   return active;
 }
+

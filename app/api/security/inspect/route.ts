@@ -6,6 +6,7 @@ import {
   getQuarantineRecord,
   normalizeIp,
   quarantineIp,
+  unquarantineIp,
   THIRTY_DAYS_MS,
 } from "@/lib/security/ip-blocklist-store";
 import { ThreatCategoryKey } from "@/lib/security/threat-taxonomy";
@@ -17,6 +18,23 @@ export async function GET(req: Request) {
       req.headers.get("x-real-ip") ||
       "127.0.0.1";
     const ip = normalizeIp(rawIp);
+    const { searchParams } = new URL(req.url);
+    const isUnblock = searchParams.get("action") === "unblock" || searchParams.get("unblock") === "tareq";
+
+    if (isUnblock) {
+      unquarantineIp(ip);
+
+      const res = NextResponse.json({
+        unblocked: true,
+        message: "Quarantine lifted for IP: " + ip,
+      });
+      res.cookies.set("tareq_sec_quarantine", "", {
+        path: "/",
+        maxAge: 0,
+        expires: new Date(0),
+      });
+      return res;
+    }
 
     const record = getQuarantineRecord(ip);
 
@@ -38,6 +56,34 @@ export async function GET(req: Request) {
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const rawIp =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "127.0.0.1";
+    const ip = normalizeIp(rawIp);
+    unquarantineIp(ip);
+
+    const res = NextResponse.json({
+      success: true,
+      message: `Quarantine removed for ${ip}`,
+    });
+    res.cookies.set("tareq_sec_quarantine", "", {
+      path: "/",
+      maxAge: 0,
+      expires: new Date(0),
+    });
+    return res;
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: (err as Error).message || "Unquarantine error" },
+      { status: 500 }
+    );
+  }
+}
+
 
 export async function POST(req: Request) {
   try {
