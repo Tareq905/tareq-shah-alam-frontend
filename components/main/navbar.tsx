@@ -9,8 +9,8 @@ import {
   HiOutlineHome,
   HiOutlineUser,
   HiOutlineChevronDown,
-  HiOutlineCodeBracket,
   HiOutlineBriefcase,
+  HiOutlineRocketLaunch,
   HiOutlineEnvelope,
   HiOutlineArrowTopRightOnSquare,
 } from "react-icons/hi2";
@@ -53,9 +53,9 @@ const NAV_ITEMS: NavItem[] = [
         link: "#about-me",
       },
       {
-        title: "Experience",
-        description: "Work milestones & engineering roles",
-        link: "#experience",
+        title: "Technical Skills",
+        description: "AI, MLOps, LLMs & tools stack",
+        link: "#skills",
       },
       {
         title: "Articles & Blog",
@@ -66,16 +66,16 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    id: "skills",
-    title: "Skills",
-    link: "#skills",
-    icon: HiOutlineCodeBracket,
+    id: "experience",
+    title: "Experience",
+    link: "#experience",
+    icon: HiOutlineBriefcase,
   },
   {
-    id: "work",
-    title: "Work",
+    id: "projects",
+    title: "Projects & Research",
     link: "#projects",
-    icon: HiOutlineBriefcase,
+    icon: HiOutlineRocketLaunch,
   },
   {
     id: "contact",
@@ -106,9 +106,9 @@ export const Navbar = () => {
     const sections: { id: string; navId: string }[] = [
       { id: "hero", navId: "home" },
       { id: "about-me", navId: "about" },
-      { id: "skills", navId: "skills" },
-      { id: "experience", navId: "about" },
-      { id: "projects", navId: "work" },
+      { id: "skills", navId: "about" },
+      { id: "experience", navId: "experience" },
+      { id: "projects", navId: "projects" },
       { id: "contact", navId: "contact" },
     ];
 
@@ -245,7 +245,7 @@ export const Navbar = () => {
                   <a
                     href={item.link}
                     onClick={(e) => handleNavClick(item, e)}
-                    className={`relative z-10 flex items-center gap-2 px-3.5 lg:px-4 py-1.5 rounded-full text-xs lg:text-sm font-medium transition-colors duration-200 cursor-pointer select-none ${
+                    className={`relative z-10 flex items-center gap-2 px-3 lg:px-4 py-1.5 rounded-full text-xs lg:text-sm font-medium transition-colors duration-200 cursor-pointer select-none whitespace-nowrap ${
                       isActive
                         ? "text-white"
                         : "text-gray-400 hover:text-gray-200"
