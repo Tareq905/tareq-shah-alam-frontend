@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { usePortfolio } from "@/context/portfolio-context";
 import { getValidImageUrl } from "@/lib/api";
 
@@ -9,8 +9,9 @@ const DEFAULT_AUDIO_PATH = "/arabic-bgm.mp3";
 const TARGET_VOLUME = 0.45; // Luxurious, comfortable ambient volume
 
 export const BackgroundMusic: React.FC = () => {
-  const { siteSetting } = usePortfolio();
+  const { siteSetting, isLoading, lastSyncedAt } = usePortfolio();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const interactionCleanupRef = useRef<(() => void) | null>(null);
 
   // States
   const [isMainPortfolioReady, setIsMainPortfolioReady] = useState(false);
@@ -20,42 +21,35 @@ export const BackgroundMusic: React.FC = () => {
   const [trackName, setTrackName] = useState("Arabic Ambient BGM");
 
   // Determine current active audio file & enabled status from backend
-  const isBgmEnabled = siteSetting.is_bgm_enabled !== false;
-  const rawBgmFile = siteSetting.bgm_file;
-  const rawBgmTitle = siteSetting.bgm_title;
+  const isBgmEnabled = Boolean(siteSetting?.is_bgm_enabled);
+  const isDataLoaded = !isLoading || lastSyncedAt !== null;
+
+  const isBgmEnabledRef = useRef(isBgmEnabled);
+  isBgmEnabledRef.current = isBgmEnabled;
+
+  const isUserMutedRef = useRef(isUserMuted);
+  isUserMutedRef.current = isUserMuted;
+
+  const isMainPortfolioReadyRef = useRef(isMainPortfolioReady);
+  isMainPortfolioReadyRef.current = isMainPortfolioReady;
 
   useEffect(() => {
     let resolvedSrc = DEFAULT_AUDIO_PATH;
+    const rawBgmFile = siteSetting?.bgm_file;
+    const rawBgmTitle = siteSetting?.bgm_title;
     if (rawBgmFile && typeof rawBgmFile === "string" && rawBgmFile.trim().length > 0) {
       resolvedSrc = getValidImageUrl(rawBgmFile);
     }
     setAudioSrc(resolvedSrc);
     setTrackName(rawBgmTitle || (rawBgmFile ? "Custom Track" : "Arabic Ambient BGM"));
-  }, [rawBgmFile, rawBgmTitle]);
+  }, [siteSetting?.bgm_file, siteSetting?.bgm_title]);
 
-  // Check when preloader finishes and main portfolio becomes active
-  useEffect(() => {
-    // If intro was already seen in session storage
-    try {
-      if (sessionStorage.getItem("portfolio_intro_seen") === "true") {
-        setIsMainPortfolioReady(true);
-      }
-    } catch {
-      // Fallback
+  // Clean up any interaction listeners helper
+  const removeInteractionListeners = useCallback(() => {
+    if (interactionCleanupRef.current) {
+      interactionCleanupRef.current();
+      interactionCleanupRef.current = null;
     }
-
-    // Listen for portfolio ready event dispatched by preloader
-    const handlePortfolioReady = () => {
-      setIsMainPortfolioReady(true);
-    };
-
-    window.addEventListener("portfolio_main_ready", handlePortfolioReady);
-    window.addEventListener("portfolio_focus_reveal", handlePortfolioReady);
-
-    return () => {
-      window.removeEventListener("portfolio_main_ready", handlePortfolioReady);
-      window.removeEventListener("portfolio_focus_reveal", handlePortfolioReady);
-    };
   }, []);
 
   // Smooth Volume Fade In helper
@@ -75,7 +69,7 @@ export const BackgroundMusic: React.FC = () => {
   // Play audio safely handling browser autoplay restrictions
   const startPlaying = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio || !isBgmEnabled || isUserMuted) return;
+    if (!audio || !isBgmEnabledRef.current || isUserMutedRef.current) return;
 
     audio.loop = true;
     const playPromise = audio.play();
@@ -85,13 +79,22 @@ export const BackgroundMusic: React.FC = () => {
         .then(() => {
           setIsPlaying(true);
           fadeIn(audio);
+          removeInteractionListeners();
         })
         .catch(() => {
           // Autoplay was blocked by browser security policy.
-          // Wait for the user's first interaction anywhere on the document.
+          // Wait for user's first interaction anywhere on document.
+          removeInteractionListeners();
+
           const handleFirstInteraction = () => {
+            removeInteractionListeners();
             const currentAudio = audioRef.current;
-            if (currentAudio && isBgmEnabled && !isUserMuted) {
+            if (
+              currentAudio &&
+              isBgmEnabledRef.current &&
+              !isUserMutedRef.current &&
+              isMainPortfolioReadyRef.current
+            ) {
               currentAudio.play().then(() => {
                 setIsPlaying(true);
                 fadeIn(currentAudio);
@@ -102,9 +105,38 @@ export const BackgroundMusic: React.FC = () => {
           window.addEventListener("click", handleFirstInteraction, { once: true });
           window.addEventListener("touchstart", handleFirstInteraction, { once: true });
           window.addEventListener("keydown", handleFirstInteraction, { once: true });
+
+          interactionCleanupRef.current = () => {
+            window.removeEventListener("click", handleFirstInteraction);
+            window.removeEventListener("touchstart", handleFirstInteraction);
+            window.removeEventListener("keydown", handleFirstInteraction);
+          };
         });
     }
-  }, [isBgmEnabled, isUserMuted, fadeIn]);
+  }, [fadeIn, removeInteractionListeners]);
+
+  // Check when preloader finishes and main portfolio becomes active
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("portfolio_intro_seen") === "true") {
+        setIsMainPortfolioReady(true);
+      }
+    } catch {
+      // Fallback
+    }
+
+    const handlePortfolioReady = () => {
+      setIsMainPortfolioReady(true);
+    };
+
+    window.addEventListener("portfolio_main_ready", handlePortfolioReady);
+    window.addEventListener("portfolio_focus_reveal", handlePortfolioReady);
+
+    return () => {
+      window.removeEventListener("portfolio_main_ready", handlePortfolioReady);
+      window.removeEventListener("portfolio_focus_reveal", handlePortfolioReady);
+    };
+  }, []);
 
   // Manage Audio element life-cycle and source changes
   useEffect(() => {
@@ -126,31 +158,41 @@ export const BackgroundMusic: React.FC = () => {
     }
   }, [audioSrc, isBgmEnabled, isMainPortfolioReady, isUserMuted, startPlaying]);
 
-  // Trigger playback ONLY after main portfolio finishes loading
+  // Strict enforcement of BGM enablement:
+  // If BGM is disabled from backend: IMMEDIATELY halt audio, cancel listeners, reset state!
   useEffect(() => {
-    if (isMainPortfolioReady && isBgmEnabled && !isUserMuted) {
-      startPlaying();
-    } else if (!isBgmEnabled && audioRef.current) {
-      // Paused from backend admin
-      audioRef.current.pause();
+    const audio = audioRef.current;
+    if (!isBgmEnabled) {
+      removeInteractionListeners();
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
       setIsPlaying(false);
+      return;
     }
-  }, [isMainPortfolioReady, isBgmEnabled, isUserMuted, startPlaying]);
+
+    // Only start if both portfolio is ready AND backend data has loaded
+    if (isDataLoaded && isMainPortfolioReady && !isUserMuted) {
+      startPlaying();
+    }
+  }, [isBgmEnabled, isDataLoaded, isMainPortfolioReady, isUserMuted, startPlaying, removeInteractionListeners]);
 
   // Tab switching / Window visibility management
-  // Pauses strictly when user leaves the tab, and resumes when returning!
   useEffect(() => {
     const handleVisibilityChange = () => {
       const audio = audioRef.current;
       if (!audio) return;
 
       if (document.hidden) {
-        // User switched tab or minimized window -> PAUSE BGM
         audio.pause();
         setIsPlaying(false);
       } else {
-        // User returned to portfolio tab -> RESUME BGM
-        if (isMainPortfolioReady && isBgmEnabled && !isUserMuted) {
+        if (
+          isMainPortfolioReadyRef.current &&
+          isBgmEnabledRef.current &&
+          !isUserMutedRef.current
+        ) {
           audio.play().then(() => {
             setIsPlaying(true);
             audio.volume = TARGET_VOLUME;
@@ -173,13 +215,23 @@ export const BackgroundMusic: React.FC = () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pagehide", handleWindowBlur);
     };
-  }, [isMainPortfolioReady, isBgmEnabled, isUserMuted]);
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      removeInteractionListeners();
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, [removeInteractionListeners]);
 
   // Manual Toggle button handler
   const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevents bubbling so nothing else triggers
+    e.stopPropagation();
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !isBgmEnabled) return;
 
     if (isPlaying) {
       audio.pause();
@@ -187,17 +239,15 @@ export const BackgroundMusic: React.FC = () => {
       setIsUserMuted(true);
     } else {
       setIsUserMuted(false);
-      if (isBgmEnabled) {
-        audio.play().then(() => {
-          setIsPlaying(true);
-          fadeIn(audio);
-        }).catch(() => {});
-      }
+      audio.play().then(() => {
+        setIsPlaying(true);
+        fadeIn(audio);
+      }).catch(() => {});
     }
   };
 
-  // Do not render floating audio UI during preloader
-  if (!isMainPortfolioReady) {
+  // Do not render floating audio UI during preloader or when disabled from backend
+  if (!isMainPortfolioReady || !isBgmEnabled) {
     return null;
   }
 
@@ -264,3 +314,4 @@ export const BackgroundMusic: React.FC = () => {
     </div>
   );
 };
+

@@ -137,7 +137,7 @@ export const DEFAULT_SITE_SETTING: SiteSetting = {
   kaggle_url: "https://www.kaggle.com",
   twitter_url: "https://twitter.com",
   resume_url: "",
-  is_bgm_enabled: true,
+  is_bgm_enabled: false,
   bgm_file: null,
   bgm_title: "Arabic Ambient BGM",
 };
